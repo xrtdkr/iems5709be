@@ -15,10 +15,10 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
-from be.urls import urls
+from be import views
 
-
-urlpatterns = [
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^api/', include(urls)),
+urls = [
+    url(r'^hello/$', views.hello, name='hello'),
+    url(r'^getCate/$', views.get_categories),
+    url(r'^getProductionById$', views.get_production_by_id),
 ]
