@@ -16,9 +16,22 @@ Including another URLconf
 from django.conf.urls import include, url
 from django.contrib import admin
 from be import views
+from be import admin_views
 
 urls = [
     url(r'^hello/$', views.hello, name='hello'),
     url(r'^getCate/$', views.get_categories),
-    url(r'^getProductionById$', views.get_production_by_id),
+    url(r'^getProductionIds/$', views.get_commodity_ids),
+    url(r'^getProductionById/$', views.get_production_by_id),
+    url(r'^getCommodity$', views.get_commodity),
+
+    url(r'^category/get/$', admin_views.category_get),
+    url(r'^category/add/$', admin_views.category_add),
+    url(r'^category/delete/$', admin_views.category_delete),
+    url(r'^category/update/$', admin_views.category_update),
+
+    url(r'^production/get/$', admin_views.production_get),
+    url(r'^production/add/$', admin_views.production_add),
+    url(r'^production/delete/$', admin_views.production_delete),
+    url(r'^production/update/$', admin_views.production_update),
 ]

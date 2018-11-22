@@ -11,5 +11,5 @@ def assemble_success_msg(data):
 def assemble_fail_msg(data):
     return {
         "msg": "fail",
-        "data": " ",
+        "data": data,
     }
