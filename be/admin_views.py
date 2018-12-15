@@ -6,6 +6,7 @@ from utils import assemble_success_msg, assemble_fail_msg
 from tools import TimeHandle
 from views import get_categories
 from models import Categories, Productions
+import json
 
 
 def category_get(request):
@@ -28,9 +29,11 @@ def category_add(request):
     if request.method != "POST":
         return JsonResponse(assemble_fail_msg("error request method"))
 
-    if ("name" in request.POST.keys()) and ("description" in request.POST.keys()):
-        name = request.POST["name"]
-        description = request.POST["description"]
+    body = json.loads(request.body)
+
+    if ("name" in body.keys()) and ("description" in body.keys()):
+        name = body["name"]
+        description = body["description"]
         Categories.objects.create(name=name, description=description)
         return JsonResponse(assemble_success_msg("success"))
 
@@ -49,8 +52,10 @@ def category_delete(request):
     if request.method != 'POST':
         return JsonResponse(assemble_fail_msg("error request method"))
 
-    if "id" in request.POST.keys():
-        category_id = request.POST["id"]
+    body = json.loads(request.body)
+
+    if "id" in body.keys():
+        category_id = int(body["id"])
         Categories.objects.get(id=category_id).delete()
         return JsonResponse(assemble_success_msg("success"))
     else:
@@ -99,6 +104,9 @@ def production_add(request):
     :return: msg
     @tested
     '''
+    print request.POST
+    print request.body
+    print request.FILES
 
     if request.method != "POST":
         return JsonResponse(assemble_fail_msg("error request method"))

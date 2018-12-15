@@ -64,6 +64,7 @@ class User(models.Model):
     nickname = models.CharField(max_length=100)
     password = models.CharField(max_length=1000)  # password 要加盐处理
     session_id = models.CharField(max_length=1000, blank=True)  # 后期把session放到缓存里面
+    is_super = models.BooleanField(default=False)
 
     def get_user(self):
         return {

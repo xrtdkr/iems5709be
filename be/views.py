@@ -1,8 +1,13 @@
 # coding: utf-8
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.http import require_GET, require_POST
-from be.models import Productions, Categories
+from be.models import *
 from utils import *
+import json
+from ierg4210Be import settings
+from tools import *
+import re
+import time
 
 
 def hello(request):
@@ -17,7 +22,7 @@ def get_categories(request):
     '''
     ret = []
     for category in Categories.objects.all():
-        ret.append({"id": category.id, "name": category.name})
+        ret.append({"id": category.id, "name": category.name, "description": category.description})
     return JsonResponse(assemble_success_msg(ret))
 
 
@@ -71,4 +76,184 @@ def get_commodity(request):
         assemble_success_msg(Productions.objects.get(id=commodity_id).get_production())
     )
 
-# Create your views here.j
+
+def register(request):
+    if request.method != 'POST':
+        return JsonResponse(assemble_fail_msg("error request method"))
+
+    body_data = json.loads(request.body)
+
+    if "username" and "password" and "email" in body_data.keys():
+        username = body_data["username"]
+        email = body_data["email"]
+        password = body_data["password"]
+
+        regex_pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        match_group = re.match(regex_pattern, email)
+
+        if not match_group:
+            return JsonResponse(assemble_fail_msg("email format is incorrect"))
+
+        if len(password) < 8:
+            return JsonResponse(assemble_fail_msg("password is not secure"))
+
+        if len(username) > 80:
+            return JsonResponse(assemble_fail_msg("username is too long"))
+        password_hashed = password_hash(password)
+        User.objects.create(email=email, nickname=username, password=password_hashed)
+        return JsonResponse(assemble_success_msg("register success, please login"))
+    else:
+        return JsonResponse(assemble_fail_msg("post data parameter error"))
+
+
+def login(request):
+    if request.method != 'POST':
+        return JsonResponse(assemble_fail_msg("error request method"))
+
+    body_data = json.loads(request.body)
+
+    if "email" and "password" in body_data.keys():
+        email = body_data["email"]
+        password = body_data["password"]
+
+        user_l = User.objects.filter(email=email)
+
+        if len(user_l) == 0:
+            return JsonResponse(assemble_fail_msg("username or password error"))
+        user = user_l[0]
+        password_hashed = user.password
+        if password_verify(password, password_hashed):
+            res = JsonResponse(assemble_success_msg("login success"))
+            session = password_hash(str(time.time()) + user.nickname)
+            user.session_id = session
+            user.save()
+            res.set_cookie("user", session)
+            print res.__dict__
+            return res
+        else:
+            return JsonResponse(assemble_fail_msg("username or password error"))
+    else:
+        return JsonResponse(assemble_fail_msg("post data parameter error"))
+
+
+def logout(request):
+    if 'user' not in request.COOKIES.keys():
+        pass
+    else:
+        del request.COOKIES['user']
+    return JsonResponse(assemble_success_msg("success"))  # 要在服务器端进行修改
+
+
+def change_password(request):
+    '''
+    :param request:  {"new_password": "xxx", "old_password": "xxx"}
+    :return:
+    '''
+    if 'user' not in request.COOKIES.keys():
+        return JsonResponse(assemble_fail_msg(data="please login"))
+
+    body_data = json.loads(request.body)
+    session_id = request.COOKIES['user']
+
+    if 'old_password' and 'new_password' in body_data.keys():
+        old_password = body_data['old_password']
+        new_password = body_data['new_password']
+        user = User.objects.get(session_id=session_id)
+        if password_verify(old_password, user.password):
+            user.password = password_hash(new_password)
+            user.save()
+        else:
+            return JsonResponse(assemble_fail_msg("old password is not correct"))
+    else:
+        return JsonResponse(assemble_fail_msg("post data parameter error"))
+
+
+def get_cart(request):
+    '''
+    :param request: None
+    :return:
+    {
+        "msg": "success",
+        "data": [1,2,3,4],
+    }
+    '''
+
+    if 'user' not in request.COOKIES.keys():
+        return JsonResponse(assemble_fail_msg(data="please login"))
+
+    user_session = request.COOKIES['user']
+    user = User.objects.get(session_id=user_session)
+
+    if len(ShoppingCart.objects.filter(user_id=user.id)) == 0:
+        return JsonResponse(
+            assemble_success_msg([])
+        )
+    else:
+        shopping_cart = ShoppingCart.objects.get(user_id=user.id)
+
+    shopping_cart_id = shopping_cart.id
+    prod_set = ProductionInShoppingCart.objects.filter(shopping_cart_id=shopping_cart_id)
+    pid_list = []
+    for prod in prod_set:
+        pid_list.append(prod.production_id)
+
+    ret_data = []
+    for pid in pid_list:
+        print pid
+        ret_data.append(Productions.objects.get(id=pid).get_production())
+    return JsonResponse(
+        assemble_success_msg(ret_data)
+    )
+
+
+def add_prod_cart(request):
+    '''
+    :param request: {"pid": xxx}
+    :return:
+    '''
+    if request.method != 'POST':
+        return JsonResponse(assemble_fail_msg("error request method"))
+    pid = request.POST.get('pid')
+    pid = int(pid)
+    if 'user' not in request.COOKIES.keys():
+        return JsonResponse(assemble_fail_msg(data="please login"))
+
+    user_session = request.COOKIES['user']
+    user = User.objects.get(session_id=user_session)
+
+    if len(ShoppingCart.objects.filter(user_id=user.id)) == 0:
+        shopping_cart = ShoppingCart.objects.create(
+            user_id=user.id
+        )
+    else:
+        shopping_cart = ShoppingCart.objects.get(user_id=user.id)
+
+    ProductionInShoppingCart.objects.create(production_id=pid, shopping_cart_id=shopping_cart.id)
+    return JsonResponse(assemble_success_msg("success"))
+
+
+def delete_prod_cart(request):
+    '''
+    :param request: {"pid": xxx}
+    :return:
+    '''
+    if request.method != 'POST':
+        return JsonResponse(assemble_fail_msg("error request method"))
+
+    pid = int(request.POST.get('pid'))
+
+    if 'user' not in request.COOKIES.keys():
+        return JsonResponse(assemble_fail_msg(data="please login"))
+
+    user_session = request.COOKIES['user']
+    user = User.objects.get(session_id=user_session)
+
+    if len(ShoppingCart.objects.filter(user_id=user.id)) == 0:
+        return JsonResponse(assemble_fail_msg("user have no shopping cart"))
+    else:
+        shopping_cart = ShoppingCart.objects.get(user_id=user.id)
+
+    ProductionInShoppingCart.objects.filter(production_id=pid, shopping_cart_id=shopping_cart.id)[0].delete()
+    return JsonResponse(assemble_success_msg("success"))
+
+# Create your views here.

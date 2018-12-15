@@ -34,4 +34,13 @@ urls = [
     url(r'^production/add/$', admin_views.production_add),
     url(r'^production/delete/$', admin_views.production_delete),
     url(r'^production/update/$', admin_views.production_update),
+
+    url(r'^register/$', views.register),
+    url(r'^login/$', views.login),
+    url(r'logout/$', views.logout),
+
+    url(r'^getShoppingCart/$', views.get_cart),
+    url(r'^addCartProd/$', views.add_prod_cart),
+    url(r'^deleteCartProd/$', views.delete_prod_cart),
+
 ]

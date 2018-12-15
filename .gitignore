@@ -5,3 +5,5 @@ templates/
 *.pyc
 upload/
 
+uwsgi.ini
+uwsgi_log.log
