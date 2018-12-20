@@ -8,6 +8,7 @@ from ierg4210Be import settings
 from tools import *
 import re
 import time
+from alipay import AliPay
 
 
 def hello(request):
@@ -286,15 +287,42 @@ def checkout(request):
         state=1,
         user_id=user.id
     )
+
+    sum = 0
     for prod in prod_set:
-        ret_data.append(Productions.objects.get(id=prod.production_id).get_production())
+        _data = Productions.objects.get(id=prod.production_id).get_production()
+        sum = sum + float(_data['price'])
+        ret_data.append(_data)
         ProductionInBill.objects.create(bill_id=bill.id, production_id=prod.id)
     shopping_cart.delete()
     shopping_cart.save()
 
+    alipay_public_key_string = open("be/key/app_public_key.pem").read()
+    app_private_key_string = open("be/key/app_private_key.pem").read()
+
+    alipay = AliPay(
+        appid="2016092300576596",
+        app_notify_url=None,
+        app_private_key_string=app_private_key_string,
+        alipay_public_key_string=alipay_public_key_string,
+        sign_type="RSA",
+        debug=False,
+    )
+
+    subject = u"测试订单".encode("utf8")
+
+    order_string = alipay.api_alipay_trade_page_pay(
+        out_trade_no="20161112",
+        subject=subject,
+        total_amount=sum,
+        return_url="http://s13.ierg4210.ie.cuhk.edu.hk",
+        notify_url="http://s13.ierg4210.ie.cuhk.edu.hk"  # 可选, 不填则使用默认notify url
+    )
+
     data = dict()
     data['bill'] = bill.get_bill()
     data['prod'] = ret_data
+    data['alipay'] = "https://openapi.alipaydev.com/gateway.do?" + order_string
 
     return JsonResponse(assemble_success_msg(data=data))
 

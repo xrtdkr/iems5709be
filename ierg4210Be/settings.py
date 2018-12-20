@@ -103,6 +103,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = './static/'
 
 HOST_DEV = 'http://localhost:8080/static'
+HOST_PROD = 'https://s13.ierg4210.ie.cuhk.edu.hk/static'
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static/upload"),

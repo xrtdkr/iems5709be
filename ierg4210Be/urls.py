@@ -19,6 +19,6 @@ from be.urls import urls
 
 
 urlpatterns = [
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^xadmin/', include(admin.site.urls)),
     url(r'^api/', include(urls)),
 ]
