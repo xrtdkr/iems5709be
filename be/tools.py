@@ -3,6 +3,7 @@
 from django.utils import timezone
 from ierg4210Be.settings import SALT
 from hashlib import sha1
+import random
 
 
 class TimeHandle(object):
@@ -30,3 +31,10 @@ def password_verify(password, password_hashed):
 
     else:
         return False
+
+
+def yield_series():
+    rad_num = str(random.random())
+    rad_str = timezone.now().strftime("%b %d %Y %H:%M:%S")
+    return sha1(rad_num + rad_str).hexdigest()
+

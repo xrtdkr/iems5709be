@@ -37,10 +37,13 @@ urls = [
 
     url(r'^register/$', views.register),
     url(r'^login/$', views.login),
-    url(r'logout/$', views.logout),
+    url(r'^logout/$', views.logout),
+    url(r'^update/$', views.change_password),
 
     url(r'^getShoppingCart/$', views.get_cart),
     url(r'^addCartProd/$', views.add_prod_cart),
     url(r'^deleteCartProd/$', views.delete_prod_cart),
+
+    url(r'^checkout/$', views.checkout),
 
 ]

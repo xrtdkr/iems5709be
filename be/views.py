@@ -152,7 +152,7 @@ def change_password(request):
     if 'user' not in request.COOKIES.keys():
         return JsonResponse(assemble_fail_msg(data="please login"))
 
-    body_data = json.loads(request.body)
+    body_data = request.POST
     session_id = request.COOKIES['user']
 
     if 'old_password' and 'new_password' in body_data.keys():
@@ -162,6 +162,7 @@ def change_password(request):
         if password_verify(old_password, user.password):
             user.password = password_hash(new_password)
             user.save()
+            return JsonResponse(assemble_success_msg("success"))
         else:
             return JsonResponse(assemble_fail_msg("old password is not correct"))
     else:
@@ -255,5 +256,46 @@ def delete_prod_cart(request):
 
     ProductionInShoppingCart.objects.filter(production_id=pid, shopping_cart_id=shopping_cart.id)[0].delete()
     return JsonResponse(assemble_success_msg("success"))
+
+
+def checkout(request):
+    '''
+
+    :param request:
+    :return:
+    '''
+
+    if 'user' not in request.COOKIES.keys():
+        return JsonResponse(assemble_fail_msg(data="please login"))
+
+    user_session = request.COOKIES['user']
+
+    user = User.objects.get(session_id=user_session)
+
+    if len(ShoppingCart.objects.filter(user_id=user.id)) == 0:
+        return JsonResponse(assemble_fail_msg("user have no shopping cart"))
+
+    shopping_cart = ShoppingCart.objects.get(user_id=user.id)
+    prod_set = ProductionInShoppingCart.objects.filter(shopping_cart_id=shopping_cart.id)
+    if len(prod_set) == 0:
+        return JsonResponse(assemble_fail_msg("empty"))
+    ret_data = []
+    bill = Bill.objects.create(
+        series=yield_series(),
+        create_time=TimeHandle.get_time_now_string(),
+        state=1,
+        user_id=user.id
+    )
+    for prod in prod_set:
+        ret_data.append(Productions.objects.get(id=prod.production_id).get_production())
+        ProductionInBill.objects.create(bill_id=bill.id, production_id=prod.id)
+    shopping_cart.delete()
+    shopping_cart.save()
+
+    data = dict()
+    data['bill'] = bill.get_bill()
+    data['prod'] = ret_data
+
+    return JsonResponse(assemble_success_msg(data=data))
 
 # Create your views here.
