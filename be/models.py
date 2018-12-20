@@ -1,6 +1,6 @@
 # coding: utf-8
 from django.db import models
-from ierg4210Be.settings import HOST_DEV
+from ierg4210Be.settings import HOST_DEV, HOST_PROD
 from tools import TimeHandle
 
 
@@ -29,7 +29,7 @@ class Productions(models.Model):
             "category_id": self.category_id,
             "price": self.price,
             "description": self.description,
-            "image": HOST_DEV + self.Image.url[13:],
+            "image": HOST_PROD + self.Image.url[13:],
         }
 
 
